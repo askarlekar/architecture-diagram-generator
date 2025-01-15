@@ -12,6 +12,7 @@ import string
 import random
 import tempfile
 
+#Fill in these details for the API_KEY, Project name and the region
 API_KEY = "<Your Key>"
 vertexai.init(project="<Your Project Name>", location="<Your region>")
 
@@ -151,25 +152,11 @@ def f_curate_response_for_mermaid(response_text):
             return(e)
 
 
-context = f"""
- Technical Specifications (GCP Focus)
-
-| Area                     | GCP Service Suggestions                      | Rationale                                                                     |
-|--------------------------|----------------------------------------------|---------------------------------------------------------------------------------|
-| **Compute**             | Google Kubernetes Engine (GKE), Compute Engine | GKE provides containerized orchestration for scalability. Compute Engine for VMs. |
-| **Storage**              | Cloud Storage, Persistent Disk                | Cloud Storage for object storage and backups. Persistent Disk for block storage.    |
-| **Database**            | Cloud SQL, Cloud Spanner                     | Cloud SQL for relational databases. Cloud Spanner for globally distributed data. |
-| **Networking**           | Virtual Private Cloud (VPC), Cloud Interconnect| VPC for network isolation. Cloud Interconnect for dedicated connectivity.        |
-| **Security**             | Cloud Armor, Cloud Key Management Service (KMS), Security Command Center, Chronicle SIEM | Cloud Armor for web application firewall. KMS for encryption. Security Command Center for threat detection. Chronicle SIEM for security analytics. |
-| **Disaster Recovery**   | Cross-region replication, Backup and Restore    | Enables rapid recovery in case of regional outages.                            |
-| **High Availability**   | Managed instance groups, Load Balancing        | Distribute traffic across multiple instances for high availability.              |
-| **Clustering**         | GKE, Cloud SQL high availability              | Containerized clustering with GKE. Database clustering with Cloud SQL.          |
-| **Monitoring & Logging**| Cloud Monitoring, Cloud Logging              | Comprehensive monitoring and logging for performance and troubleshooting.       |
-
-"""
+with open("context.txt", "r") as f:
+    context = f.read()
 
 # Format the context and prompt   {mermaid_context}
-prompt=f"""
+textprompt=f"""
 Context:
 {context}
 You are an experienced Google Cloud Architect who specializes in creating architectural diagrams using Mermaid diagramming tool.
@@ -180,9 +167,7 @@ Eg: Compute Engine maps to  VM, MySQL and CloudSpanner map to Database. Use your
 The connection order should be Network, Components, Databases.
 print(prompt)
 """
-
-
-prompt="I am a solutions Architect and I want you to comprehend the attached image. I want to draw an architecture diagram using GCP services. Help me draw one using mermaid.js code that can be rendered. Come up with an architecture diagram using all of the services mentioned in this image. Do not use CSS or style. Wherever possible and correct,  Put the services inside box which shows the category of services. e.g. Cloud Spanner as Database, BigQuery for Analytics, Looker as Visualization and Cloud Functions for serverless compute."
+imageprompt="I am a solutions Architect and I want you to comprehend the attached image. I want to draw an architecture diagram using GCP services. Help me draw one using mermaid.js code that can be rendered. Come up with an architecture diagram using all of the services mentioned in this image. Do not use CSS or style. Wherever possible and correct,  Put the services inside box which shows the category of services. e.g. Cloud Spanner as Database, BigQuery for Analytics, Looker as Visualization and Cloud Functions for serverless compute."
 videoprompt="I am a solutions Architect and I want you to comprehend the attached video. By analyzing the components from this video which can potentially send data, I want to draw an architecture diagram using GCP services in its appropriate category for data processing.Help me draw one using mermaid.js code that can be rendered. Do not apply CSS or Style."
 
 
@@ -200,12 +185,12 @@ tab1, tab2, tab3, tab4 = st.tabs(["Generate", "Upload", "Capture", "Video Analys
 
 with tab1:
                 generate_arch = st.button("Generate Architecture", key="generate_arch")
-                if generate_arch and prompt:
+                if generate_arch and textprompt:
                     with st.spinner(
                         f":rainbow[Generating Architecture Diagram using given context...]"
                     ):
                         try:
-                            response = get_gemini_response(selected_model, prompt, GenerationConfig(temperature=0, max_output_tokens=2048))
+                            response = get_gemini_response(selected_model, textprompt, GenerationConfig(temperature=0, max_output_tokens=2048))
                             replaced = f_curate_response_for_mermaid(response)
                             try:
                                     stmd.st_mermaid(replaced, height= "300px", width= "850px")                                 
@@ -248,7 +233,7 @@ with tab2:
                                     file_path = f_get_the_local_file_path(vUploadedFile)
                                     genai.configure(api_key=API_KEY)
                                     sample_file = genai.upload_file(path=file_path, display_name="My Arch PNG", mime_type="image/jpeg")
-                                    response = image_model.generate_content([sample_file, prompt])
+                                    response = image_model.generate_content([sample_file, imageprompt])
                                     replaced = f_curate_response_for_mermaid(response.text)
                                     stmd.st_mermaid(replaced, height= "550px", width= "auto")
                                 except Exception as e:
@@ -279,7 +264,7 @@ with tab3:
                             file_path = f_get_the_local_file_path(vUploadedFile)
                             genai.configure(api_key=API_KEY)
                             sample_file = genai.upload_file(path=file_path, display_name="My Arch PNG", mime_type="image/jpeg")
-                            response = image_model.generate_content([sample_file, prompt])
+                            response = image_model.generate_content([sample_file, imageprompt])
                             replaced = f_curate_response_for_mermaid(response.text)
                             stmd.st_mermaid(replaced, height= "1250px", width= "850px")                          
                         except Exception as e:
